@@ -18,6 +18,7 @@ The protocol does **not** enforce hedging or settlement of external instruments.
 - Non-recourse: borrower can walk away if collateral value < debt
 - Borrower’s upside capped at `K_call` strike
 - Optional refinance path in the middle-case settlement region to avoid collateral sale
+- Underwriting fee charged at origination, paid by lender to protocol fee collector
 
 Collateral liquidation is now used **only as a last resort**, and **only after a refinance attempt fails** (in eligible cases) or a refi grace window has expired.
 
@@ -36,6 +37,13 @@ Per-loan parameters:
 | `K_call` | Upside cap (call strike) |
 | `S_T` | Oracle BTC/USD price read at/near maturity |
 | `V` | Collateral value at maturity `V = C * S_T` |
+
+Protocol-wide parameters (RFQRouter):
+
+| Symbol | Meaning |
+|--------|---------|
+| `F_bps` | Underwriting fee in bips (annualized) |
+| `feeCollector` | Address receiving underwriting fees |
 
 A loan moves through a state machine at/after maturity to avoid single-call race conditions and MEV griefing.
 
@@ -200,3 +208,22 @@ To prevent MEV-induced griefing:
   - borrower submits intent to finalize settlement
 
 Thus draining external pools temporarily does not let an attacker force premature collateral sale.
+
+---
+
+## Underwriting Fee (Origination)
+
+The RFQRouter charges an underwriting fee paid by the lender at origination.
+
+Definitions:
+
+- `F_bps`: annualized fee in basis points.
+- `duration = T - now` at origination.
+- `fee = P * F_bps * duration / (365 days * 10_000)`
+
+Behavior:
+
+- Fee is taken from the lender during `openLoan`.
+- Fee is transferred to `feeCollector`.
+- Borrower still receives full `P` principal.
+- Fee is independent of settlement logic (not refunded on default).

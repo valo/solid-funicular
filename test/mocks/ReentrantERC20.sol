@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {MockERC20} from "../../src/mocks/MockERC20.sol";
+import {MockERC20} from "./MockERC20.sol";
 
 contract ReentrantERC20 is MockERC20 {
     address public reenterTarget;

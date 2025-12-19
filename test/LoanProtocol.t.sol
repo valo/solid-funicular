@@ -2,11 +2,12 @@
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
+import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 
 import {RFQRouter} from "../src/RFQRouter.sol";
 import {LoanVault} from "../src/LoanVault.sol";
-import {MockERC20} from "../src/mocks/MockERC20.sol";
-import {MockOracleAdapter} from "../src/mocks/MockOracleAdapter.sol";
+import {MockERC20} from "./mocks/MockERC20.sol";
+import {MockOracleAdapter} from "./mocks/MockOracleAdapter.sol";
 import {ReentrantERC20} from "./mocks/ReentrantERC20.sol";
 import {MockRefinanceAdapter} from "./mocks/MockRefinanceAdapter.sol";
 
@@ -21,12 +22,16 @@ contract LoanProtocolTest is Test {
     uint256 private borrowerKey;
     address private lender;
     uint256 private lenderKey;
+    address private feeCollector;
+    uint256 private feeBps;
 
     bytes private oracleData;
     bytes private refiAdapterData;
 
     function setUp() public {
-        router = new RFQRouter();
+        feeCollector = address(0xFEE);
+        feeBps = 100;
+        router = new RFQRouter(feeCollector, feeBps);
         collateralToken = new MockERC20("Wrapped BTC", "WBTC", 8);
         debtToken = new MockERC20("USD Coin", "USDC", 6);
         oracle = new MockOracleAdapter();
@@ -48,6 +53,9 @@ contract LoanProtocolTest is Test {
         collateralToken.approve(address(router), type(uint256).max);
         vm.prank(lender);
         debtToken.approve(address(router), type(uint256).max);
+        address[] memory adapters = new address[](1);
+        adapters[0] = address(refiAdapter);
+        router.setRefiAdapters(adapters, true);
     }
 
     function test_OpenLoanAndSettle_DefaultCase() public {
@@ -141,6 +149,32 @@ contract LoanProtocolTest is Test {
         assertGt(lenderAmount, 0);
     }
 
+    function test_OpenLoan_ChargesUnderwritingFee() public {
+        uint256 collateralAmount = 100_000_000;
+        uint256 principal = 2_000_000;
+        uint256 repayment = 2_000_000;
+        uint256 expiry = block.timestamp + 180 days;
+        uint256 callStrike = 1_000_000;
+
+        bytes memory refiData = _buildRefiData(false);
+        RFQRouter.LoanQuote memory quote = _buildQuote(
+            principal,
+            repayment,
+            collateralAmount,
+            expiry,
+            callStrike,
+            14,
+            refiData
+        );
+
+        uint256 feeAtOrigination = _feeForQuoteAt(quote, block.timestamp);
+        uint256 feeCollectorBefore = debtToken.balanceOf(feeCollector);
+
+        _openLoan(quote, collateralAmount, refiData);
+
+        assertEq(debtToken.balanceOf(feeCollector), feeCollectorBefore + feeAtOrigination);
+    }
+
     function test_AttemptRefinance_Succeeds() public {
         uint256 collateralAmount = 500_000_000;
         uint256 principal = 1_000_000;
@@ -158,6 +192,7 @@ contract LoanProtocolTest is Test {
             4,
             refiData
         );
+        uint256 feeAtOrigination = _feeForQuoteAt(quote, block.timestamp);
         refiAdapter.setShouldSucceed(true);
         address vault = _openLoan(quote, collateralAmount, refiData);
 
@@ -166,7 +201,7 @@ contract LoanProtocolTest is Test {
 
         bool success = LoanVault(vault).attemptRefinance();
         assertTrue(success);
-        assertEq(debtToken.balanceOf(lender), 1_000_000_000_000 - principal + repayment);
+        assertEq(debtToken.balanceOf(lender), 1_000_000_000_000 - principal - feeAtOrigination + repayment);
         assertEq(collateralToken.balanceOf(borrower), 1_000_000_000);
     }
 
@@ -249,6 +284,94 @@ contract LoanProtocolTest is Test {
         vm.warp(expiry);
         vm.expectRevert(LoanVault.InvalidOracle.selector);
         LoanVault(vault).settleNormally();
+    }
+
+    function test_SetFeeConfig_OnlyOwner() public {
+        address newCollector = address(0x1234);
+        uint256 newFeeBps = 200;
+        router.setFeeConfig(newCollector, newFeeBps);
+        assertEq(router.feeCollector(), newCollector);
+        assertEq(router.feeBps(), newFeeBps);
+    }
+
+    function test_SetFeeConfig_RevertsForNonOwner() public {
+        vm.prank(borrower);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, borrower));
+        router.setFeeConfig(address(0x1234), 1);
+    }
+
+    function test_SetRefiAdapters_RevertsForNonOwner() public {
+        address[] memory adapters = new address[](1);
+        adapters[0] = address(refiAdapter);
+        vm.prank(borrower);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, borrower));
+        router.setRefiAdapters(adapters, true);
+    }
+
+    function test_ViewHelpers_OracleAndRefiHash() public view {
+        bytes memory data = abi.encodePacked("BTCUSD-HASH");
+        bytes memory refiData = _buildRefiData(true);
+        assertEq(router.computeOracleDataHash(data), keccak256(data));
+        assertEq(router.computeRefiConfigHash(refiData), keccak256(refiData));
+    }
+
+    function test_PreviewFee_MatchesFeeCalc() public view {
+        uint256 collateralAmount = 100_000_000;
+        uint256 principal = 2_000_000;
+        uint256 repayment = 2_500_000;
+        uint256 expiry = block.timestamp + 30 days;
+        uint256 callStrike = 1_000_000;
+
+        bytes memory refiData = _buildRefiData(false);
+        RFQRouter.LoanQuote memory quote = _buildQuote(
+            principal,
+            repayment,
+            collateralAmount,
+            expiry,
+            callStrike,
+            16,
+            refiData
+        );
+
+        uint256 expectedFee = _feeForQuoteAt(quote, block.timestamp);
+        uint256 preview = router.previewFee(quote.principal, quote.expiry, block.timestamp);
+        assertEq(preview, expectedFee);
+    }
+
+    function test_PreviewFee_RevertsIfExpiredAtTimestamp() public {
+        vm.expectRevert(RFQRouter.LoanExpired.selector);
+        router.previewFee(1, block.timestamp - 1, block.timestamp);
+    }
+
+    function test_OpenLoan_RefiAdapterMustBeWhitelisted() public {
+        address[] memory adapters = new address[](1);
+        adapters[0] = address(refiAdapter);
+        router.setRefiAdapters(adapters, false);
+
+        uint256 collateralAmount = 100_000_000;
+        uint256 principal = 1_000_000;
+        uint256 repayment = 2_000_000;
+        uint256 expiry = block.timestamp + 7 days;
+        uint256 callStrike = 1_000_000;
+
+        bytes memory refiData = _buildRefiData(true);
+        RFQRouter.LoanQuote memory quote = _buildQuote(
+            principal,
+            repayment,
+            collateralAmount,
+            expiry,
+            callStrike,
+            15,
+            refiData
+        );
+
+        bytes32 digest = router.getQuoteDigest(quote);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(lenderKey, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.prank(borrower);
+        vm.expectRevert(RFQRouter.RefiAdapterNotWhitelisted.selector);
+        router.openLoan(quote, collateralAmount, oracleData, refiData, signature);
     }
 
     function test_OpenLoan_ReplayNonce() public {
@@ -344,7 +467,7 @@ contract LoanProtocolTest is Test {
         ReentrantERC20 reentrantToken = new ReentrantERC20("Reentrant", "REENT", 8);
         reentrantToken.mint(borrower, 1_000_000_000);
 
-        RFQRouter localRouter = new RFQRouter();
+        RFQRouter localRouter = new RFQRouter(feeCollector, feeBps);
         MockOracleAdapter localOracle = new MockOracleAdapter();
 
         vm.prank(borrower);
@@ -502,5 +625,14 @@ contract LoanProtocolTest is Test {
 
         vm.prank(borrower);
         vault = router.openLoan(quote, collateralAmount, oracleData, refiData, signature);
+    }
+
+    function _feeForQuoteAt(RFQRouter.LoanQuote memory quote, uint256 timestamp) internal view returns (uint256) {
+        if (feeBps == 0) {
+            return 0;
+        }
+        uint256 duration = quote.expiry - timestamp;
+        uint256 annualFee = (quote.principal * feeBps) / 10_000;
+        return (annualFee * duration) / 365 days;
     }
 }

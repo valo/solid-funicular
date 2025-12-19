@@ -42,6 +42,8 @@ contract LoanVault is ReentrancyGuard {
     error RefiWindowActive();
     error RefiDisabled();
 
+    uint256 private constant BPS_DENOMINATOR = 10_000;
+
     event LoanInitialized(
         address indexed borrower,
         address indexed lender,
@@ -145,7 +147,7 @@ contract LoanVault is ReentrancyGuard {
         if (refi.enabled && refi.adapter == address(0)) {
             revert InvalidParams();
         }
-        if (refi.maxLtvBps > 10_000) {
+        if (refi.maxLtvBps > BPS_DENOMINATOR) {
             revert InvalidParams();
         }
 
@@ -349,7 +351,7 @@ contract LoanVault is ReentrancyGuard {
             return true;
         }
         uint256 collateralValue = Math.mulDiv(collateralAmount, settlementPrice, 1);
-        uint256 maxBorrow = Math.mulDiv(collateralValue, refiMaxLtvBps, 10_000);
+        uint256 maxBorrow = Math.mulDiv(collateralValue, refiMaxLtvBps, BPS_DENOMINATOR);
         return repaymentAmount <= maxBorrow;
     }
 
