@@ -62,6 +62,7 @@ contract GasProfileTest is Test {
         uint256 repayment = 5_500_000;
         uint256 expiry = block.timestamp + 14 days;
         uint256 callStrike = 40_000;
+        uint256 putStrike = _defaultPutStrike(callStrike);
 
         bytes memory refiData = _buildRefiData(false);
         RFQRouter.LoanQuote memory quote = _buildQuote(
@@ -70,6 +71,7 @@ contract GasProfileTest is Test {
             collateralAmount,
             expiry,
             callStrike,
+            putStrike,
             21,
             refiData
         );
@@ -84,6 +86,7 @@ contract GasProfileTest is Test {
         uint256 repayment = 8_000_000;
         uint256 expiry = block.timestamp + 7 days;
         uint256 callStrike = 30_000;
+        uint256 putStrike = _defaultPutStrike(callStrike);
 
         bytes memory refiData = _buildRefiData(false);
         RFQRouter.LoanQuote memory quote = _buildQuote(
@@ -92,6 +95,7 @@ contract GasProfileTest is Test {
             collateralAmount,
             expiry,
             callStrike,
+            putStrike,
             22,
             refiData
         );
@@ -110,6 +114,7 @@ contract GasProfileTest is Test {
         uint256 repayment = 3_000_000;
         uint256 expiry = block.timestamp + 10 days;
         uint256 callStrike = 40_000;
+        uint256 putStrike = _defaultPutStrike(callStrike);
 
         bytes memory refiData = _buildRefiData(true);
         RFQRouter.LoanQuote memory quote = _buildQuote(
@@ -118,6 +123,7 @@ contract GasProfileTest is Test {
             collateralAmount,
             expiry,
             callStrike,
+            putStrike,
             23,
             refiData
         );
@@ -137,6 +143,7 @@ contract GasProfileTest is Test {
         uint256 repayment = 4_000_000;
         uint256 expiry = block.timestamp + 9 days;
         uint256 callStrike = 25_000;
+        uint256 putStrike = _defaultPutStrike(callStrike);
 
         bytes memory refiData = _buildRefiData(false);
         RFQRouter.LoanQuote memory quote = _buildQuote(
@@ -145,6 +152,7 @@ contract GasProfileTest is Test {
             collateralAmount,
             expiry,
             callStrike,
+            putStrike,
             24,
             refiData
         );
@@ -177,6 +185,7 @@ contract GasProfileTest is Test {
         uint256 minCollateral,
         uint256 expiry,
         uint256 callStrike,
+        uint256 putStrike,
         uint256 nonce,
         bytes memory refiData
     ) internal view returns (RFQRouter.LoanQuote memory) {
@@ -190,12 +199,24 @@ contract GasProfileTest is Test {
                 minCollateralAmount: minCollateral,
                 expiry: expiry,
                 callStrike: callStrike,
+                putStrike: putStrike,
                 oracleAdapter: address(oracle),
                 oracleDataHash: keccak256(oracleData),
                 refiConfigHash: keccak256(refiData),
                 deadline: block.timestamp + 1 days,
                 nonce: nonce
             });
+    }
+
+    function _defaultPutStrike(uint256 callStrike) internal pure returns (uint256) {
+        if (callStrike <= 1) {
+            return 1;
+        }
+        uint256 put = callStrike / 4;
+        if (put == 0 || put >= callStrike) {
+            put = callStrike - 1;
+        }
+        return put;
     }
 
     function _openLoan(RFQRouter.LoanQuote memory quote, uint256 collateralAmount, bytes memory refiData)

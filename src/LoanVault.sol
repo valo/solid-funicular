@@ -54,6 +54,7 @@ contract LoanVault is ReentrancyGuard {
         uint256 repaymentAmount,
         uint256 expiry,
         uint256 callStrike,
+        uint256 putStrike,
         address oracleAdapter,
         bytes oracleData,
         bool refiEnabled,
@@ -80,6 +81,7 @@ contract LoanVault is ReentrancyGuard {
     uint256 public repaymentAmount;
     uint256 public expiry;
     uint256 public callStrike;
+    uint256 public putStrike;
     address public oracleAdapter;
     bytes public oracleData;
 
@@ -116,6 +118,7 @@ contract LoanVault is ReentrancyGuard {
         uint256 repaymentAmount_,
         uint256 expiry_,
         uint256 callStrike_,
+        uint256 putStrike_,
         address oracleAdapter_,
         bytes calldata oracleData_,
         bytes calldata refiData_
@@ -136,11 +139,15 @@ contract LoanVault is ReentrancyGuard {
             repaymentAmount_ == 0 ||
             principal_ == 0 ||
             expiry_ == 0 ||
-            callStrike_ == 0
+            callStrike_ == 0 ||
+            putStrike_ == 0
         ) {
             revert InvalidParams();
         }
         if (expiry_ <= block.timestamp) {
+            revert InvalidParams();
+        }
+        if (callStrike_ <= putStrike_) {
             revert InvalidParams();
         }
         RefiData memory refi = _decodeRefiData(refiData_);
@@ -160,6 +167,7 @@ contract LoanVault is ReentrancyGuard {
         repaymentAmount = repaymentAmount_;
         expiry = expiry_;
         callStrike = callStrike_;
+        putStrike = putStrike_;
         oracleAdapter = oracleAdapter_;
         oracleData = oracleData_;
         refiEnabled = refi.enabled;
@@ -180,6 +188,7 @@ contract LoanVault is ReentrancyGuard {
             repaymentAmount_,
             expiry_,
             callStrike_,
+            putStrike_,
             oracleAdapter_,
             oracleData_,
             refi.enabled,
@@ -341,6 +350,9 @@ contract LoanVault is ReentrancyGuard {
         if (!refiEnabled) {
             return false;
         }
+        if (price < putStrike) {
+            return false;
+        }
         uint256 collateralValue = Math.mulDiv(collateralAmount, price, 1);
         uint256 capValue = Math.mulDiv(collateralAmount, callStrike, 1);
         return collateralValue >= repaymentAmount && collateralValue <= capValue;
@@ -356,6 +368,12 @@ contract LoanVault is ReentrancyGuard {
     }
 
     function _splitCollateral(uint256 price) internal view returns (uint256 lenderAmount, uint256 borrowerAmount) {
+        if (price < putStrike) {
+            lenderAmount = collateralAmount;
+            borrowerAmount = 0;
+            return (lenderAmount, borrowerAmount);
+        }
+
         uint256 collateralValue = Math.mulDiv(collateralAmount, price, 1);
         uint256 capValue = Math.mulDiv(collateralAmount, callStrike, 1);
 

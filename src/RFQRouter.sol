@@ -22,6 +22,7 @@ contract RFQRouter is ReentrancyGuard, Ownable {
         uint256 minCollateralAmount;
         uint256 expiry;
         uint256 callStrike;
+        uint256 putStrike;
         address oracleAdapter;
         bytes32 oracleDataHash;
         bytes32 refiConfigHash;
@@ -48,7 +49,7 @@ contract RFQRouter is ReentrancyGuard, Ownable {
 
     bytes32 public constant LOAN_QUOTE_TYPEHASH =
         keccak256(
-            "LoanQuote(address lender,address debtToken,address collateralToken,uint256 principal,uint256 repaymentAmount,uint256 minCollateralAmount,uint256 expiry,uint256 callStrike,address oracleAdapter,bytes32 oracleDataHash,bytes32 refiConfigHash,uint256 deadline,uint256 nonce)"
+            "LoanQuote(address lender,address debtToken,address collateralToken,uint256 principal,uint256 repaymentAmount,uint256 minCollateralAmount,uint256 expiry,uint256 callStrike,uint256 putStrike,address oracleAdapter,bytes32 oracleDataHash,bytes32 refiConfigHash,uint256 deadline,uint256 nonce)"
         );
     bytes32 private constant _DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
@@ -166,6 +167,7 @@ contract RFQRouter is ReentrancyGuard, Ownable {
             quote.repaymentAmount,
             quote.expiry,
             quote.callStrike,
+            quote.putStrike,
             quote.oracleAdapter,
             oracleData,
             refiData
@@ -211,8 +213,12 @@ contract RFQRouter is ReentrancyGuard, Ownable {
             quote.repaymentAmount == 0 ||
             quote.minCollateralAmount == 0 ||
             quote.callStrike == 0 ||
+            quote.putStrike == 0 ||
             quote.oracleAdapter == address(0)
         ) {
+            revert InvalidParams();
+        }
+        if (quote.putStrike >= quote.callStrike) {
             revert InvalidParams();
         }
         if (collateralAmount < quote.minCollateralAmount) {

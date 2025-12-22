@@ -64,6 +64,7 @@ contract LoanProtocolTest is Test {
         uint256 repayment = 200_000_000;
         uint256 expiry = block.timestamp + 7 days;
         uint256 callStrike = 2_000_000;
+        uint256 putStrike = _defaultPutStrike(callStrike);
 
         bytes memory refiData = _buildRefiData(false);
         RFQRouter.LoanQuote memory quote = _buildQuote(
@@ -72,6 +73,7 @@ contract LoanProtocolTest is Test {
             collateralAmount,
             expiry,
             callStrike,
+            putStrike,
             1,
             refiData
         );
@@ -96,6 +98,7 @@ contract LoanProtocolTest is Test {
         uint256 repayment = 5_000_000;
         uint256 expiry = block.timestamp + 10 days;
         uint256 callStrike = 200;
+        uint256 putStrike = _defaultPutStrike(callStrike);
 
         bytes memory refiData = _buildRefiData(false);
         RFQRouter.LoanQuote memory quote = _buildQuote(
@@ -104,6 +107,7 @@ contract LoanProtocolTest is Test {
             collateralAmount,
             expiry,
             callStrike,
+            putStrike,
             2,
             refiData
         );
@@ -125,6 +129,7 @@ contract LoanProtocolTest is Test {
         uint256 repayment = 5_000_000;
         uint256 expiry = block.timestamp + 12 days;
         uint256 callStrike = 200;
+        uint256 putStrike = _defaultPutStrike(callStrike);
 
         bytes memory refiData = _buildRefiData(false);
         RFQRouter.LoanQuote memory quote = _buildQuote(
@@ -133,6 +138,7 @@ contract LoanProtocolTest is Test {
             collateralAmount,
             expiry,
             callStrike,
+            putStrike,
             3,
             refiData
         );
@@ -155,6 +161,7 @@ contract LoanProtocolTest is Test {
         uint256 repayment = 2_000_000;
         uint256 expiry = block.timestamp + 180 days;
         uint256 callStrike = 1_000_000;
+        uint256 putStrike = _defaultPutStrike(callStrike);
 
         bytes memory refiData = _buildRefiData(false);
         RFQRouter.LoanQuote memory quote = _buildQuote(
@@ -163,6 +170,7 @@ contract LoanProtocolTest is Test {
             collateralAmount,
             expiry,
             callStrike,
+            putStrike,
             14,
             refiData
         );
@@ -181,6 +189,7 @@ contract LoanProtocolTest is Test {
         uint256 repayment = 5_000_000;
         uint256 expiry = block.timestamp + 5 days;
         uint256 callStrike = 200;
+        uint256 putStrike = _defaultPutStrike(callStrike);
 
         bytes memory refiData = _buildRefiData(true);
         RFQRouter.LoanQuote memory quote = _buildQuote(
@@ -189,6 +198,7 @@ contract LoanProtocolTest is Test {
             collateralAmount,
             expiry,
             callStrike,
+            putStrike,
             4,
             refiData
         );
@@ -211,6 +221,7 @@ contract LoanProtocolTest is Test {
         uint256 repayment = 5_000_000;
         uint256 expiry = block.timestamp + 5 days;
         uint256 callStrike = 200;
+        uint256 putStrike = _defaultPutStrike(callStrike);
 
         bytes memory refiData = _buildRefiData(true);
         RFQRouter.LoanQuote memory quote = _buildQuote(
@@ -219,6 +230,7 @@ contract LoanProtocolTest is Test {
             collateralAmount,
             expiry,
             callStrike,
+            putStrike,
             5,
             refiData
         );
@@ -242,6 +254,7 @@ contract LoanProtocolTest is Test {
         uint256 repayment = 2_000_000;
         uint256 expiry = block.timestamp + 5 days;
         uint256 callStrike = 1_000_000;
+        uint256 putStrike = _defaultPutStrike(callStrike);
 
         bytes memory refiData = _buildRefiData(false);
         RFQRouter.LoanQuote memory quote = _buildQuote(
@@ -250,6 +263,7 @@ contract LoanProtocolTest is Test {
             collateralAmount,
             expiry,
             callStrike,
+            putStrike,
             6,
             refiData
         );
@@ -267,6 +281,7 @@ contract LoanProtocolTest is Test {
         uint256 repayment = 2_000_000;
         uint256 expiry = block.timestamp + 5 days;
         uint256 callStrike = 1_000_000;
+        uint256 putStrike = _defaultPutStrike(callStrike);
 
         bytes memory refiData = _buildRefiData(false);
         RFQRouter.LoanQuote memory quote = _buildQuote(
@@ -275,6 +290,7 @@ contract LoanProtocolTest is Test {
             collateralAmount,
             expiry,
             callStrike,
+            putStrike,
             7,
             refiData
         );
@@ -321,6 +337,7 @@ contract LoanProtocolTest is Test {
         uint256 repayment = 2_500_000;
         uint256 expiry = block.timestamp + 30 days;
         uint256 callStrike = 1_000_000;
+        uint256 putStrike = _defaultPutStrike(callStrike);
 
         bytes memory refiData = _buildRefiData(false);
         RFQRouter.LoanQuote memory quote = _buildQuote(
@@ -329,6 +346,7 @@ contract LoanProtocolTest is Test {
             collateralAmount,
             expiry,
             callStrike,
+            putStrike,
             16,
             refiData
         );
@@ -353,6 +371,7 @@ contract LoanProtocolTest is Test {
         uint256 repayment = 2_000_000;
         uint256 expiry = block.timestamp + 7 days;
         uint256 callStrike = 1_000_000;
+        uint256 putStrike = _defaultPutStrike(callStrike);
 
         bytes memory refiData = _buildRefiData(true);
         RFQRouter.LoanQuote memory quote = _buildQuote(
@@ -361,6 +380,7 @@ contract LoanProtocolTest is Test {
             collateralAmount,
             expiry,
             callStrike,
+            putStrike,
             15,
             refiData
         );
@@ -380,6 +400,7 @@ contract LoanProtocolTest is Test {
         uint256 repayment = 2_000_000;
         uint256 expiry = block.timestamp + 7 days;
         uint256 callStrike = 1_000_000;
+        uint256 putStrike = _defaultPutStrike(callStrike);
 
         bytes memory refiData = _buildRefiData(false);
         RFQRouter.LoanQuote memory quote = _buildQuote(
@@ -388,6 +409,7 @@ contract LoanProtocolTest is Test {
             collateralAmount,
             expiry,
             callStrike,
+            putStrike,
             8,
             refiData
         );
@@ -409,6 +431,7 @@ contract LoanProtocolTest is Test {
         uint256 repayment = 2_000_000;
         uint256 expiry = block.timestamp + 7 days;
         uint256 callStrike = 1_000_000;
+        uint256 putStrike = _defaultPutStrike(callStrike);
 
         bytes memory refiData = _buildRefiData(false);
         RFQRouter.LoanQuote memory quote = _buildQuote(
@@ -417,6 +440,7 @@ contract LoanProtocolTest is Test {
             collateralAmount,
             expiry,
             callStrike,
+            putStrike,
             9,
             refiData
         );
@@ -436,6 +460,7 @@ contract LoanProtocolTest is Test {
         uint256 repayment = 2_000_000;
         uint256 expiry = block.timestamp + 7 days;
         uint256 callStrike = 1_000_000;
+        uint256 putStrike = _defaultPutStrike(callStrike);
 
         bytes memory refiData = _buildRefiData(false);
         RFQRouter.LoanQuote memory quote = RFQRouter.LoanQuote({
@@ -447,6 +472,7 @@ contract LoanProtocolTest is Test {
             minCollateralAmount: collateralAmount,
             expiry: expiry,
             callStrike: callStrike,
+            putStrike: putStrike,
             oracleAdapter: address(oracle),
             oracleDataHash: keccak256(oracleData),
             refiConfigHash: keccak256(refiData),
@@ -460,6 +486,35 @@ contract LoanProtocolTest is Test {
 
         vm.prank(borrower);
         vm.expectRevert(RFQRouter.QuoteExpired.selector);
+        router.openLoan(quote, collateralAmount, oracleData, refiData, signature);
+    }
+
+    function test_OpenLoan_RevertsWhenPutNotLowerThanCall() public {
+        uint256 collateralAmount = 100_000_000;
+        uint256 principal = 1_000_000;
+        uint256 repayment = 2_000_000;
+        uint256 expiry = block.timestamp + 7 days;
+        uint256 callStrike = 1_000_000;
+        uint256 putStrike = callStrike; // intentionally invalid
+
+        bytes memory refiData = _buildRefiData(false);
+        RFQRouter.LoanQuote memory quote = _buildQuote(
+            principal,
+            repayment,
+            collateralAmount,
+            expiry,
+            callStrike,
+            putStrike,
+            25,
+            refiData
+        );
+
+        bytes32 digest = router.getQuoteDigest(quote);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(lenderKey, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.prank(borrower);
+        vm.expectRevert(RFQRouter.InvalidParams.selector);
         router.openLoan(quote, collateralAmount, oracleData, refiData, signature);
     }
 
@@ -480,6 +535,7 @@ contract LoanProtocolTest is Test {
         uint256 repayment = 1_000_000;
         uint256 expiry = block.timestamp + 5 days;
         uint256 callStrike = 1_000_000;
+        uint256 putStrike = _defaultPutStrike(callStrike);
         bytes memory localData = abi.encodePacked("BTCUSD-REENT");
         bytes memory refiData = _buildRefiData(false);
 
@@ -492,6 +548,7 @@ contract LoanProtocolTest is Test {
             minCollateralAmount: collateralAmount,
             expiry: expiry,
             callStrike: callStrike,
+            putStrike: putStrike,
             oracleAdapter: address(localOracle),
             oracleDataHash: keccak256(localData),
             refiConfigHash: keccak256(refiData),
@@ -523,6 +580,7 @@ contract LoanProtocolTest is Test {
         uint256 repayment = 2_000_000;
         uint256 expiry = block.timestamp + 7 days;
         uint256 callStrike = 1_000_000;
+        uint256 putStrike = _defaultPutStrike(callStrike);
 
         bytes memory refiData = _buildRefiData(false);
         RFQRouter.LoanQuote memory quote = _buildQuote(
@@ -531,6 +589,7 @@ contract LoanProtocolTest is Test {
             collateralAmount,
             expiry,
             callStrike,
+            putStrike,
             12,
             refiData
         );
@@ -544,10 +603,14 @@ contract LoanProtocolTest is Test {
         LoanVault(vault).settleNormally();
     }
 
-    function testFuzz_SettlementSplits(uint256 price, uint256 callStrike, uint256 repaymentAmount) public {
+    function testFuzz_SettlementSplits(uint256 price, uint256 callStrike, uint256 putStrike, uint256 repaymentAmount)
+        public
+    {
         price = bound(price, 1, 1_000_000_000);
-        callStrike = bound(callStrike, 1, 1_000_000_000);
+        callStrike = bound(callStrike, 2, 1_000_000_000);
+        putStrike = bound(putStrike, 1, 1_000_000_000);
         repaymentAmount = bound(repaymentAmount, 1, 100_000_000);
+        vm.assume(putStrike < callStrike);
 
         uint256 collateralAmount = 1_000_000_000;
         uint256 principal = repaymentAmount;
@@ -560,6 +623,7 @@ contract LoanProtocolTest is Test {
             collateralAmount,
             expiry,
             callStrike,
+            putStrike,
             13,
             refiData
         );
@@ -594,6 +658,7 @@ contract LoanProtocolTest is Test {
         uint256 minCollateral,
         uint256 expiry,
         uint256 callStrike,
+        uint256 putStrike,
         uint256 nonce,
         bytes memory refiData
     ) internal view returns (RFQRouter.LoanQuote memory) {
@@ -607,12 +672,24 @@ contract LoanProtocolTest is Test {
                 minCollateralAmount: minCollateral,
                 expiry: expiry,
                 callStrike: callStrike,
+                putStrike: putStrike,
                 oracleAdapter: address(oracle),
                 oracleDataHash: keccak256(oracleData),
                 refiConfigHash: keccak256(refiData),
                 deadline: block.timestamp + 1 days,
                 nonce: nonce
             });
+    }
+
+    function _defaultPutStrike(uint256 callStrike) internal pure returns (uint256) {
+        if (callStrike <= 1) {
+            return 1;
+        }
+        uint256 put = callStrike / 4;
+        if (put == 0 || put >= callStrike) {
+            put = callStrike - 1;
+        }
+        return put;
     }
 
     function _openLoan(RFQRouter.LoanQuote memory quote, uint256 collateralAmount, bytes memory refiData)

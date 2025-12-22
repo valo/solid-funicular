@@ -35,6 +35,7 @@ Per-loan parameters:
 | `R` | Repayment amount owed at maturity (may equal `P` for 0% APR loans) |
 | `T` | Maturity timestamp |
 | `K_call` | Upside cap (call strike) |
+| `K_put` | Downside threshold (put strike); if breached, lender seizes all collateral |
 | `S_T` | Oracle BTC/USD price read at/near maturity |
 | `V` | Collateral value at maturity `V = C * S_T` |
 
@@ -101,7 +102,10 @@ Based on `V = C * S_T`:
 ### 1. Downside Region — No Refi Attempt
 ```
 
-if V < R
+if S_T < K_put
+  -> all collateral to lender
+else if V < R
+  -> all collateral to lender
 
 ```
 
