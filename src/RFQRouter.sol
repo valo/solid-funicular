@@ -26,6 +26,7 @@ contract RFQRouter is ReentrancyGuard, Ownable {
         address oracleAdapter;
         bytes32 oracleDataHash;
         bytes32 refiConfigHash;
+        uint256 feeBps;
         uint256 deadline;
         uint256 nonce;
     }
@@ -49,7 +50,7 @@ contract RFQRouter is ReentrancyGuard, Ownable {
 
     bytes32 public constant LOAN_QUOTE_TYPEHASH =
         keccak256(
-            "LoanQuote(address lender,address debtToken,address collateralToken,uint256 principal,uint256 repaymentAmount,uint256 minCollateralAmount,uint256 expiry,uint256 callStrike,uint256 putStrike,address oracleAdapter,bytes32 oracleDataHash,bytes32 refiConfigHash,uint256 deadline,uint256 nonce)"
+            "LoanQuote(address lender,address debtToken,address collateralToken,uint256 principal,uint256 repaymentAmount,uint256 minCollateralAmount,uint256 expiry,uint256 callStrike,uint256 putStrike,address oracleAdapter,bytes32 oracleDataHash,bytes32 refiConfigHash,uint256 feeBps,uint256 deadline,uint256 nonce)"
         );
     bytes32 private constant _DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
@@ -181,11 +182,11 @@ contract RFQRouter is ReentrancyGuard, Ownable {
     }
 
     function _collectFee(LoanQuote calldata quote) internal {
-        if (feeBps == 0 || feeCollector == address(0)) {
+        if (quote.feeBps == 0 || feeCollector == address(0)) {
             return;
         }
         uint256 duration = quote.expiry - block.timestamp;
-        uint256 annualFee = Math.mulDiv(quote.principal, feeBps, BPS_DENOMINATOR);
+        uint256 annualFee = Math.mulDiv(quote.principal, quote.feeBps, BPS_DENOMINATOR);
         uint256 fee = Math.mulDiv(annualFee, duration, SECONDS_PER_YEAR);
         if (fee == 0) {
             return;
@@ -214,9 +215,13 @@ contract RFQRouter is ReentrancyGuard, Ownable {
             quote.minCollateralAmount == 0 ||
             quote.callStrike == 0 ||
             quote.putStrike == 0 ||
-            quote.oracleAdapter == address(0)
+            quote.oracleAdapter == address(0) ||
+            quote.feeBps > BPS_DENOMINATOR
         ) {
             revert InvalidParams();
+        }
+        if (quote.feeBps > 0 && feeCollector == address(0)) {
+            revert InvalidFeeConfig();
         }
         if (quote.putStrike >= quote.callStrike) {
             revert InvalidParams();

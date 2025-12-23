@@ -241,6 +241,8 @@ contract LoanVault is ReentrancyGuard {
         } catch {
             success = false;
         }
+        // Ensure no lingering approvals remain on the adapter.
+        IERC20(collateralToken).forceApprove(refiAdapter, 0);
 
         emit LoanRefinanceAttempt(success);
 
@@ -351,6 +353,9 @@ contract LoanVault is ReentrancyGuard {
             return false;
         }
         if (price < putStrike) {
+            return false;
+        }
+        if (price > callStrike) {
             return false;
         }
         uint256 collateralValue = Math.mulDiv(collateralAmount, price, 1);

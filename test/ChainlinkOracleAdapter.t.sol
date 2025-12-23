@@ -43,6 +43,17 @@ contract ChainlinkOracleAdapterTest is Test {
         assertEq(price, 0);
     }
 
+    function test_ReturnsFalseWhenPriceBeforeRequestedTimestamp() public {
+        ChainlinkOracleAdapter.ChainlinkConfig memory cfg =
+            ChainlinkOracleAdapter.ChainlinkConfig({feed: address(feed), maxStaleness: 0});
+        // Feed updated now, but request a price for a later timestamp.
+        uint256 atTimestamp = block.timestamp + 1 hours;
+
+        (uint256 price, bool valid) = adapter.getPrice(abi.encode(cfg), atTimestamp);
+        assertFalse(valid);
+        assertEq(price, 0);
+    }
+
     function test_RevertsOnEmptyData() public {
         vm.expectRevert(ChainlinkOracleAdapter.InvalidFeed.selector);
         adapter.getPrice("", block.timestamp);

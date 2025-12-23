@@ -248,6 +248,35 @@ contract LoanProtocolTest is Test {
         assertEq(LoanVault(vault).collateralForLender() + LoanVault(vault).collateralForBorrower(), collateralAmount);
     }
 
+    function test_AttemptRefinance_RevertsAboveCallStrike() public {
+        uint256 collateralAmount = 500_000_000;
+        uint256 principal = 1_000_000;
+        uint256 repayment = 5_000_000;
+        uint256 expiry = block.timestamp + 5 days;
+        uint256 callStrike = 200;
+        uint256 putStrike = _defaultPutStrike(callStrike);
+
+        bytes memory refiData = _buildRefiData(true);
+        RFQRouter.LoanQuote memory quote = _buildQuote(
+            principal,
+            repayment,
+            collateralAmount,
+            expiry,
+            callStrike,
+            putStrike,
+            18,
+            refiData
+        );
+        refiAdapter.setShouldSucceed(true);
+        address vault = _openLoan(quote, collateralAmount, refiData);
+
+        oracle.setPrice(oracleData, 500, true); // above call strike
+        vm.warp(expiry);
+
+        vm.expectRevert(LoanVault.RefiNotEligible.selector);
+        LoanVault(vault).attemptRefinance();
+    }
+
     function test_Settle_RevertsBeforeExpiry() public {
         uint256 collateralAmount = 100_000_000;
         uint256 principal = 1_000_000;
@@ -476,6 +505,7 @@ contract LoanProtocolTest is Test {
             oracleAdapter: address(oracle),
             oracleDataHash: keccak256(oracleData),
             refiConfigHash: keccak256(refiData),
+            feeBps: feeBps,
             deadline: block.timestamp - 1,
             nonce: 10
         });
@@ -552,6 +582,7 @@ contract LoanProtocolTest is Test {
             oracleAdapter: address(localOracle),
             oracleDataHash: keccak256(localData),
             refiConfigHash: keccak256(refiData),
+            feeBps: feeBps,
             deadline: block.timestamp + 1 days,
             nonce: 11
         });
@@ -563,7 +594,8 @@ contract LoanProtocolTest is Test {
         vm.prank(borrower);
         address vault = localRouter.openLoan(quote, collateralAmount, localData, refiData, signature);
 
-        localOracle.setPrice(localData, 100, true);
+        // Price in the money so borrower receives collateral, triggering the ERC20 reentrancy hook.
+        localOracle.setPrice(localData, callStrike, true);
         vm.warp(expiry);
         LoanVault(vault).settleNormally();
 
@@ -676,6 +708,7 @@ contract LoanProtocolTest is Test {
                 oracleAdapter: address(oracle),
                 oracleDataHash: keccak256(oracleData),
                 refiConfigHash: keccak256(refiData),
+                feeBps: feeBps,
                 deadline: block.timestamp + 1 days,
                 nonce: nonce
             });
@@ -705,11 +738,11 @@ contract LoanProtocolTest is Test {
     }
 
     function _feeForQuoteAt(RFQRouter.LoanQuote memory quote, uint256 timestamp) internal view returns (uint256) {
-        if (feeBps == 0) {
+        if (quote.feeBps == 0) {
             return 0;
         }
         uint256 duration = quote.expiry - timestamp;
-        uint256 annualFee = (quote.principal * feeBps) / 10_000;
+        uint256 annualFee = (quote.principal * quote.feeBps) / 10_000;
         return (annualFee * duration) / 365 days;
     }
 }

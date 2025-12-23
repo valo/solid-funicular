@@ -92,6 +92,7 @@ Price requirements:
 - Must come from a whitelisted oracle adapter
 - Must be within freshness/staleness bounds
 - If oracle unavailable, settlement delays until valid price exists
+- Refinance eligibility only considered when `K_put <= S_T <= K_call`
 
 ---
 
@@ -171,12 +172,12 @@ if V > C * K_call
 
 - Collateral value exceeds the upside cap.
 - Borrower’s economic upside is capped at `C * K_call`
-- No refi is attempted in this region, since borrower is already made whole economically.
+- No refi is attempted in this region, since borrower is already made whole economically and refi eligibility excludes `S_T > K_call`.
 
 Settlement transfers:
 
 - BTC equivalent of `C * K_call − R` to borrower (in BTC terms)
-- Remaining BTC value to lender
+- Remaining BTC value to lender so the lender can fund the call payout hedging cost
 
 (Exact transfer mechanics defined separately.)
 

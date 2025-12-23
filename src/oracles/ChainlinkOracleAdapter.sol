@@ -15,7 +15,7 @@ contract ChainlinkOracleAdapter is IOracleAdapter {
     error InvalidFeed();
 
     /// @inheritdoc IOracleAdapter
-    function getPrice(bytes calldata data, uint256) external view returns (uint256 price, bool valid) {
+    function getPrice(bytes calldata data, uint256 atTimestamp) external view returns (uint256 price, bool valid) {
         ChainlinkConfig memory config = _decodeConfig(data);
         if (config.feed == address(0)) {
             revert InvalidFeed();
@@ -33,6 +33,10 @@ contract ChainlinkOracleAdapter is IOracleAdapter {
             return (0, false);
         }
         if (answeredInRound < roundId || updatedAt == 0) {
+            return (0, false);
+        }
+        // Disallow using prices that pre-date the requested timestamp (e.g. loan expiry).
+        if (updatedAt < atTimestamp) {
             return (0, false);
         }
         if (config.maxStaleness > 0 && block.timestamp - updatedAt > config.maxStaleness) {

@@ -203,6 +203,7 @@ contract GasProfileTest is Test {
                 oracleAdapter: address(oracle),
                 oracleDataHash: keccak256(oracleData),
                 refiConfigHash: keccak256(refiData),
+                feeBps: feeBps,
                 deadline: block.timestamp + 1 days,
                 nonce: nonce
             });
